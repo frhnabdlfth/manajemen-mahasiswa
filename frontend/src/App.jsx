@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 
-import LoginPage from "./components/LoginPage.jsx";
+import LoginPage from "./components/auth/LoginPage.jsx";
 import Navbar from "./components/layout/Navbar.jsx";
 import MahasiswaToolbar from "./components/mahasiswa/MahasiswaToolbar.jsx";
 import MahasiswaTable from "./components/mahasiswa/MahasiswaTable.jsx";
@@ -10,7 +10,7 @@ import AlertMessage from "./components/ui/AlertMessage.jsx";
 import ConfirmModal from "./components/ui/ConfirmModal.jsx";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./config/auth";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 function getAuthHeaders() {
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
@@ -30,6 +30,23 @@ const emptyForm = {
   tipe: "Reguler",
 };
 
+const sortComplexityInfo = {
+  bubble: "Bubble Sort memiliki Time Complexity O(n²).",
+  insertion: "Insertion Sort memiliki Time Complexity O(n²), best case O(n).",
+  selection: "Selection Sort memiliki Time Complexity O(n²).",
+  merge: "Merge Sort memiliki Time Complexity O(n log n).",
+  shell: "Shell Sort rata-rata sekitar O(n log n), worst case tergantung gap.",
+};
+
+const sortFieldLabel = {
+  nama: "Nama",
+  nim: "NIM",
+  email: "Email",
+  jurusan: "Jurusan",
+  angkatan: "Angkatan",
+  tipe: "Tipe",
+};
+
 export default function App() {
   const [authUser, setAuthUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -38,6 +55,7 @@ export default function App() {
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
 
+  const [searchInput, setSearchInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [sortBy, setSortBy] = useState("nama");
   const [algorithm, setAlgorithm] = useState("merge");
@@ -78,19 +96,35 @@ export default function App() {
   };
 
   const filteredMahasiswa = useMemo(() => {
-    const text = keyword.toLowerCase();
+    return mahasiswa;
+  }, [mahasiswa]);
 
-    return mahasiswa.filter((item) =>
-      [item.nim, item.nama, item.email, item.jurusan, item.angkatan, item.tipe]
-        .join(" ")
-        .toLowerCase()
-        .includes(text),
+  const handleChangeAlgorithm = (selectedAlgorithm) => {
+    setAlgorithm(selectedAlgorithm);
+
+    const message = sortComplexityInfo[selectedAlgorithm];
+
+    if (message) {
+      setMessage(message);
+    }
+  };
+
+  const handleChangeSortBy = (selectedSortBy) => {
+    setSortBy(selectedSortBy);
+
+    setMessage(
+      `Data akan diurutkan berdasarkan ${sortFieldLabel[selectedSortBy] || selectedSortBy}.`,
     );
-  }, [mahasiswa, keyword]);
+  };
 
-  const fetchMahasiswa = async () => {
+  const fetchMahasiswa = async (resetSearch = false) => {
     try {
       setLoading(true);
+
+      if (resetSearch) {
+        setSearchInput("");
+        setKeyword("");
+      }
 
       const response = await fetch(
         `${API_URL}/mahasiswa?sort_by=${sortBy}&algorithm=${algorithm}`,
@@ -233,17 +267,30 @@ export default function App() {
   };
 
   const handleBackendSearch = async () => {
+    const keywordValue = searchInput.trim();
+
+    if (!keywordValue) {
+      setMessage("Masukkan kata kunci pencarian terlebih dahulu.");
+      return;
+    }
+
+    if (!searchAlgorithm) {
+      setMessage("Pilih algoritma search terlebih dahulu.");
+      return;
+    }
+
     try {
       setLoading(true);
+      setKeyword(keywordValue);
 
       let url = "";
 
       if (searchAlgorithm === "binary") {
-        url = `${API_URL}/mahasiswa/search/binary?nim=${keyword}`;
+        url = `${API_URL}/mahasiswa/search/binary?nim=${encodeURIComponent(keywordValue)}`;
       } else if (searchAlgorithm === "linear") {
-        url = `${API_URL}/mahasiswa/search/linear?keyword=${keyword}`;
+        url = `${API_URL}/mahasiswa/search/linear?keyword=${encodeURIComponent(keywordValue)}`;
       } else {
-        url = `${API_URL}/mahasiswa/search/sequential?keyword=${keyword}`;
+        url = `${API_URL}/mahasiswa/search/sequential?keyword=${encodeURIComponent(keywordValue)}`;
       }
 
       const response = await fetch(url, {
@@ -339,17 +386,19 @@ export default function App() {
         <section className="grid gap-5">
           <MahasiswaToolbar
             total={filteredMahasiswa.length}
-            keyword={keyword}
-            setKeyword={setKeyword}
+            keyword={searchInput}
+            setKeyword={setSearchInput}
             searchAlgorithm={searchAlgorithm}
             setSearchAlgorithm={setSearchAlgorithm}
+            sortBy={sortBy}
+            setSortBy={handleChangeSortBy}
             algorithm={algorithm}
-            setAlgorithm={setAlgorithm}
+            setAlgorithm={handleChangeAlgorithm}
             onSearch={handleBackendSearch}
             onOpenCreate={openCreateModal}
             onExport={exportFile}
             onReadFile={readFile}
-            onRefresh={fetchMahasiswa}
+            onRefresh={() => fetchMahasiswa(true)}
             loading={loading}
           />
 

@@ -1,22 +1,35 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import mysql.connector
 from typing import List, Optional
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from email.message import EmailMessage
 from fastapi import Depends, Header
+from dotenv import load_dotenv
 
 import re
 import json
+import os
+import random
+import smtplib
+import mysql.connector
+
+load_dotenv()
 
 # =========================
 # CONFIG AUTH
 # =========================
-SECRET_KEY = "4ASFSAF-ASF87278BJJKASF-21KJBJASF"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 1
+SECRET_KEY = os.getenv("APP_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("APP_SECRET_KEY belum diset di file .env")
+
+ALGORITHM = os.getenv("APP_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+
+GMAIL_USER = os.getenv("GMAIL_USER", "").strip()
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "").replace(" ", "").strip()
 
 password_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
@@ -24,13 +37,13 @@ password_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 # CONFIG DATABASE
 # =========================
 DB_CONFIG = {
-    "host": "localhost",
-    "user": "root",
-    "password": "",
-    "database": "manajemen_mahasiswa",
+    "host": os.getenv("DB_HOST"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "database": os.getenv("DB_NAME"),
 }
 
-DATA_FILE = "mahasiswa_data.json"
+DATA_FILE = os.getenv("DATA_FILE")
 
 # =========================
 # CUSTOM EXCEPTION
@@ -165,7 +178,7 @@ def get_connection():
         raise DatabaseException(f"Gagal koneksi database: {error}")
 
 # =========================
-# REQUEST SCHEMA LOGIN
+# REQUEST SCHEMA LOGIN & REGISTER
 # =========================
 class LoginRequest(BaseModel):
     username: str
@@ -173,8 +186,20 @@ class LoginRequest(BaseModel):
     nama: Optional[str] = None
     role: Optional[str] = "Admin"
 
+class RegisterRequest(BaseModel):
+    username: str
+    email: str
+    nama: str
+    password: str
+    confirm_password: str
+
+
+class VerifyEmailRequest(BaseModel):
+    email: str
+    code: str
+
 # ===========================
-# LOGIN & AUTH HELPERS
+# LOGIN, REGISTER, VALIDATION, EMAIL VERIFICATION & AUTH HELPERS
 # ===========================
 
 def hash_password(password: str):
@@ -198,11 +223,36 @@ def get_admin_by_username(username: str):
 
         cursor.execute(
             """
-            SELECT id, username, password_hash, nama, role
+            SELECT id, username, email, password_hash, nama, role, email_verified
             FROM admin_users
             WHERE username = %s
             """,
             (username,),
+        )
+
+        admin = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        return admin
+
+    except Exception as error:
+        raise DatabaseException(str(error))
+
+
+def get_admin_by_email(email: str):
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT id, username, email, password_hash, nama, role, email_verified
+            FROM admin_users
+            WHERE email = %s
+            """,
+            (email,),
         )
 
         admin = cursor.fetchone()
@@ -231,7 +281,7 @@ def get_current_admin(authorization: str = Header(default=None)):
         if not username:
             raise HTTPException(status_code=401, detail="Token tidak valid.")
 
-        admin = get_admin_by_username(username)
+        admin = get_admin_by_username(username) or get_admin_by_email(username)
 
         if not admin:
             raise HTTPException(status_code=401, detail="Admin tidak ditemukan.")
@@ -247,6 +297,166 @@ def get_current_admin(authorization: str = Header(default=None)):
         raise HTTPException(status_code=401, detail="Format authorization tidak valid.")
     except JWTError:
         raise HTTPException(status_code=401, detail="Token tidak valid atau expired.")
+    
+def validate_username(username: str):
+    pattern = r"^[a-zA-Z0-9_]{4,20}$"
+
+    if not re.match(pattern, username):
+        raise ValidationException(
+            "Username harus 4-20 karakter dan hanya boleh huruf, angka, underscore."
+        )
+
+def validate_password(password: str):
+    if len(password) < 8:
+        raise ValidationException("Password minimal 8 karakter.")
+
+    if len(password) > 72:
+        raise ValidationException("Password maksimal 72 karakter.")
+
+    if not re.search(r"[A-Z]", password):
+        raise ValidationException("Password harus mengandung minimal 1 huruf besar.")
+
+    if not re.search(r"[a-z]", password):
+        raise ValidationException("Password harus mengandung minimal 1 huruf kecil.")
+
+    if not re.search(r"[0-9]", password):
+        raise ValidationException("Password harus mengandung minimal 1 angka.")
+
+
+def validate_email(email: str):
+    pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+
+    if not re.match(pattern, email):
+        raise ValidationException("Format email tidak valid.")
+
+
+def validate_name(nama: str):
+    pattern = r"^[A-Za-z\s.'-]{3,100}$"
+
+    if not re.match(pattern, nama):
+        raise ValidationException("Nama hanya boleh huruf, spasi, titik, petik, atau strip.")
+
+def generate_verification_code():
+    return str(random.randint(100000, 999999))
+
+
+def send_verification_email(to_email: str, code: str):
+    if not GMAIL_USER or not GMAIL_APP_PASSWORD:
+        raise ValidationException(
+            "Konfigurasi Gmail belum tersedia. Set GMAIL_USER dan GMAIL_APP_PASSWORD."
+        )
+
+    message = EmailMessage()
+    message["Subject"] = "Kode Verifikasi Akun Manajemen Mahasiswa"
+    message["From"] = GMAIL_USER
+    message["To"] = to_email
+
+    # Fallback plain text jika email client tidak support HTML
+    message.set_content(
+        f"""
+        Halo,
+
+        Kode verifikasi akun kamu adalah:
+
+        {code}
+
+        Kode ini berlaku selama 10 menit.
+        Jika kamu tidak merasa melakukan registrasi, abaikan email ini.
+
+        Terima kasih.
+        """
+    )
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Kode Verifikasi</title>
+    </head>
+    <body style="margin:0; padding:0; background:#FFF7D6; font-family:Arial, Helvetica, sans-serif; color:#111827;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF7D6; padding:32px 16px;">
+        <tr>
+          <td align="center">
+            <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px; background:#ffffff; border:4px solid #000000; border-radius:28px; box-shadow:10px 10px 0 #000000; overflow:hidden;">
+              
+              <tr>
+                <td style="background:#FFDE59; border-bottom:4px solid #000000; padding:28px;">
+                  <div style="display:inline-block; background:#4ADE80; border:4px solid #000000; border-radius:18px; padding:12px 16px; font-weight:900; box-shadow:5px 5px 0 #000000;">
+                    🎓 Manajemen Mahasiswa
+                  </div>
+
+                  <h1 style="margin:24px 0 8px; font-size:32px; line-height:1.05; font-weight:900; color:#111827;">
+                    Verifikasi Email Kamu
+                  </h1>
+
+                  <p style="margin:0; font-size:15px; line-height:1.6; font-weight:700; color:#111827;">
+                    Gunakan kode di bawah ini untuk menyelesaikan proses registrasi akun admin.
+                  </p>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:28px;">
+                  <p style="margin:0 0 18px; font-size:16px; line-height:1.6; font-weight:700;">
+                    Halo 👋
+                  </p>
+
+                  <p style="margin:0 0 22px; font-size:15px; line-height:1.7; color:#374151;">
+                    Terima kasih sudah melakukan registrasi. Masukkan kode verifikasi berikut pada halaman verifikasi email.
+                  </p>
+
+                  <div style="background:#C4B5FD; border:4px solid #000000; border-radius:22px; padding:22px; text-align:center; box-shadow:6px 6px 0 #000000; margin:24px 0;">
+                    <p style="margin:0 0 10px; font-size:12px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase;">
+                      Kode Verifikasi
+                    </p>
+
+                    <div style="display:inline-block; background:#ffffff; border:4px solid #000000; border-radius:18px; padding:14px 24px; font-size:36px; font-weight:900; letter-spacing:8px; color:#111827; box-shadow:5px 5px 0 #000000;">
+                      {code}
+                    </div>
+                  </div>
+
+                  <div style="background:#FFDE59; border:4px solid #000000; border-radius:20px; padding:16px; box-shadow:5px 5px 0 #000000;">
+                    <p style="margin:0; font-size:14px; line-height:1.6; font-weight:800;">
+                      ⚠️ Kode ini berlaku selama 10 menit.
+                    </p>
+                  </div>
+
+                  <p style="margin:24px 0 0; font-size:14px; line-height:1.7; color:#4B5563;">
+                    Kalau kamu tidak merasa melakukan registrasi akun, abaikan email ini. Jangan berikan kode ini kepada siapa pun.
+                  </p>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="background:#111827; padding:20px 28px; border-top:4px solid #000000;">
+                  <p style="margin:0; font-size:13px; line-height:1.6; color:#ffffff; font-weight:700;">
+                    Email otomatis dari sistem Manajemen Data Mahasiswa.
+                  </p>
+                  <p style="margin:6px 0 0; font-size:12px; color:#D1D5DB;">
+                    Jangan membalas email ini.
+                  </p>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+    """
+
+    message.add_alternative(html_content, subtype="html")
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            smtp.send_message(message)
+
+    except Exception as error:
+        raise ValidationException(f"Gagal mengirim email verifikasi: {error}")
 
 # =========================
 # REGEX VALIDATION
@@ -483,45 +693,6 @@ app.add_middleware(
 # =========================
 # LOGIN & AUTH ROUTES
 # =========================
-@app.post("/auth/seed-admin")
-def seed_admin():
-    try:
-        existing = get_admin_by_username("admin")
-
-        if existing:
-            return {
-                "message": "Admin default sudah tersedia.",
-                "username": "admin",
-            }
-
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        password_hash = hash_password("admin123")
-
-        cursor.execute(
-            """
-            INSERT INTO admin_users (username, password_hash, nama, role)
-            VALUES (%s, %s, %s, %s)
-            """,
-            ("admin", password_hash, "Admin Mahasiswa", "admin"),
-        )
-
-        conn.commit()
-
-        cursor.close()
-        conn.close()
-
-        return {
-            "message": "Admin default berhasil dibuat.",
-            "username": "admin",
-            "password": "admin123",
-        }
-
-    except Exception as error:
-        raise HTTPException(status_code=500, detail=str(error))
-
-
 @app.post("/auth/login")
 def login(data: LoginRequest):
     try:
@@ -536,11 +707,17 @@ def login(data: LoginRequest):
         admin = get_admin_by_username(username)
 
         if not admin:
-            raise HTTPException(status_code=401, detail="Username atau password salah.")
+            raise HTTPException(status_code=401, detail="Username tidak ditemukan. Silahkan Registrasi dulu cuy.")
 
         if not verify_password(data.password, admin["password_hash"]):
-            raise HTTPException(status_code=401, detail="Username atau password salah.")
+            raise HTTPException(status_code=401, detail="Password salah.")
 
+        if admin["email_verified"] != 1:
+            raise HTTPException(
+                status_code=403,
+                detail="Email belum diverifikasi. Silakan cek Gmail kamu."
+            )
+    
         token = create_access_token({
             "sub": admin["username"],
             "role": admin["role"],
@@ -552,9 +729,10 @@ def login(data: LoginRequest):
             "user": {
                 "id": admin["id"],
                 "username": admin["username"],
+                "email": admin["email"],
                 "nama": admin["nama"],
                 "role": admin["role"],
-            },
+            }
         }
 
     except HTTPException:
@@ -562,6 +740,209 @@ def login(data: LoginRequest):
     except Exception as error:
         raise HTTPException(status_code=500, detail=str(error))
 
+@app.post("/auth/register")
+def register(data: RegisterRequest):
+    try:
+        username = data.username.strip()
+        email = data.email.strip().lower()
+        nama = data.nama.strip()
+
+        validate_username(username)
+        validate_email(email)
+        validate_name(nama)
+        validate_password(data.password)
+
+        if data.password != data.confirm_password:
+            raise ValidationException("Konfirmasi password tidak sama.")
+
+        existing_username = get_admin_by_username(username)
+        if existing_username:
+            raise HTTPException(status_code=409, detail="Username sudah digunakan.")
+
+        existing_email = get_admin_by_email(email)
+        if existing_email:
+            raise HTTPException(status_code=409, detail="Email sudah digunakan.")
+
+        code = generate_verification_code()
+        expired_at = datetime.utcnow() + timedelta(minutes=10)
+        password_hash = hash_password(data.password)
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            INSERT INTO admin_users
+            (username, email, password_hash, nama, role, email_verified, verification_code, verification_expired_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                username,
+                email,
+                password_hash,
+                nama,
+                "Admin",
+                0,
+                code,
+                expired_at,
+            ),
+        )
+
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        send_verification_email(email, code)
+
+        return {
+            "message": "Registrasi berhasil. Silakan cek Gmail kamu untuk kode verifikasi.",
+            "email": email,
+        }
+
+    except ValidationException as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    except HTTPException:
+        raise
+    except mysql.connector.IntegrityError:
+        raise HTTPException(status_code=409, detail="Username atau email sudah digunakan.")
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
+
+@app.post("/auth/verify-email")
+def verify_email(data: VerifyEmailRequest):
+    try:
+        email = data.email.strip().lower()
+        code = data.code.strip()
+
+        validate_email(email)
+
+        if not re.match(r"^[0-9]{6}$", code):
+            raise ValidationException("Kode verifikasi harus 6 digit angka.")
+
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT id, email, verification_code, verification_expired_at, email_verified
+            FROM admin_users
+            WHERE email = %s
+            """,
+            (email,),
+        )
+
+        admin = cursor.fetchone()
+
+        if not admin:
+            raise HTTPException(status_code=404, detail="Email tidak ditemukan.")
+
+        if admin["email_verified"] == 1:
+            return {
+                "message": "Email sudah terverifikasi. Silakan login."
+            }
+
+        if admin["verification_code"] != code:
+            raise HTTPException(status_code=400, detail="Kode verifikasi salah.")
+
+        expired_at = admin["verification_expired_at"]
+
+        if expired_at and datetime.utcnow() > expired_at:
+            raise HTTPException(status_code=400, detail="Kode verifikasi sudah expired.")
+
+        cursor.execute(
+            """
+            UPDATE admin_users
+            SET email_verified = 1,
+                verification_code = NULL,
+                verification_expired_at = NULL
+            WHERE id = %s
+            """,
+            (admin["id"],),
+        )
+
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        return {
+            "message": "Email berhasil diverifikasi. Silakan login."
+        }
+
+    except ValidationException as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    except HTTPException:
+        raise
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
+
+@app.post("/auth/resend-verification")
+def resend_verification(email: str):
+    try:
+        email = email.strip().lower()
+        validate_email(email)
+
+        admin = get_admin_by_email(email)
+
+        if not admin:
+            raise HTTPException(status_code=404, detail="Email tidak ditemukan.")
+
+        if admin["email_verified"] == 1:
+            return {
+                "message": "Email sudah terverifikasi. Silakan login."
+            }
+
+        code = generate_verification_code()
+        expired_at = datetime.utcnow() + timedelta(minutes=10)
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            UPDATE admin_users
+            SET verification_code = %s,
+                verification_expired_at = %s
+            WHERE email = %s
+            """,
+            (code, expired_at, email),
+        )
+
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        email_sent = True
+        email_error = None
+
+        try:
+            send_verification_email(email, code)
+        except ValidationException as error:
+            email_sent = False
+            email_error = str(error)
+
+        response = {
+            "message": "Registrasi berhasil.",
+            "email": email,
+            "email_sent": email_sent,
+        }
+
+        if email_sent:
+            response["message"] = "Registrasi berhasil. Silakan cek Gmail kamu untuk kode verifikasi."
+        else:
+            response["message"] = "Registrasi berhasil, tapi email verifikasi gagal dikirim. Gunakan kode verifikasi dari database untuk mode development."
+            response["email_error"] = email_error
+
+        return response
+
+    except ValidationException as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    except HTTPException:
+        raise
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=str(error))
 
 @app.get("/auth/me")
 def auth_me(current_admin: dict = Depends(get_current_admin)):

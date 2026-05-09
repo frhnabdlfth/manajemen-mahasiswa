@@ -1,0 +1,17 @@
+services:
+  manajemen-mahasiswa-api:
+    image: manajemen-mahasiswa-api
+    container_name: manajemen-mahasiswa-api
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    networks:
+      - mahasiswa_network
+
+networks:
+  mahasiswa_network:
+    external: true

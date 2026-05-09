@@ -1,3 +1,6 @@
+# Penjelasan Singkat Dari Aplikasi Ini
+Aplikasi ini dibuat dengan frontend react js dan backend python FastAPI, adapun untuk database menggunakan MySQL.
+
 # Praktik
    1. Penamaan variabel jelas:
       mahasiswa_array, validate_mahasiswa, binary_search_by_nim.
@@ -19,13 +22,13 @@
    8. Skalabilitas:
       Sorting dan searching dipisah agar mudah diuji dan dikembangkan.
 
-# Installasi dan run Frontend
+# Installasi dan run Frontend (Local)
    1. buka terminal 1
    2. cd frontend
    3. npm install
    4. npm run dev
 
-# Installasi dan run Backend
+# Installasi dan run Backend (Local)
    1. buka terminal 2
    2. cd backend
    3. pip install -r requirements.txt
