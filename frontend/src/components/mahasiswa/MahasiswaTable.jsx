@@ -70,11 +70,11 @@ export default function MahasiswaTable({ data, onEdit, onDelete }) {
                     {item.tipe}
                   </td>
                   <td className="border-b-[3px] border-black px-4 py-4">
-                    <div className="flex gap-2 justify-center">
+                    <div className="flex gap-1.5 justify-center">
                       <button
                         type="button"
                         onClick={() => onEdit(item)}
-                        className="rounded-[14px] border-[3px] border-black bg-[#60A5FA] p-2 shadow-[3px_3px_0_#000] transition hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_#000] cursor-pointer"
+                        className="rounded-[14px] border-[3px] border-black bg-[#FFDE59] p-2 shadow-[3px_3px_0_#000] transition hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_#000] cursor-pointer"
                       >
                         <Pencil size={16} />
                       </button>

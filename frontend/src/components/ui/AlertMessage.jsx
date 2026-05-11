@@ -1,7 +1,18 @@
+import { useEffect } from "react";
 import { X } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function AlertMessage({ message, onClose }) {
+  useEffect(() => {
+    if (!message) return;
+
+    const timer = setTimeout(() => {
+      onClose?.();
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [message, onClose]);
+
   return (
     <motion.section
       initial={{ opacity: 0, y: -12, scale: 0.98 }}
@@ -21,7 +32,7 @@ export default function AlertMessage({ message, onClose }) {
           y: 1,
           boxShadow: "1px 1px 0 #000",
         }}
-        className="rounded-[12px] border-[3px] border-black bg-[#FB7185] p-1 shadow-[2px_2px_0_#000] cursor-pointer"
+        className="cursor-pointer rounded-[12px] border-[3px] border-black bg-[#FB7185] p-1 shadow-[2px_2px_0_#000]"
       >
         <X size={16} />
       </motion.button>

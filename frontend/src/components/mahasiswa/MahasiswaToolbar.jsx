@@ -46,7 +46,7 @@ export default function MahasiswaToolbar({
       <div className="mb-5 flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <h2 className="text-xl font-black md:text-2xl">Data Mahasiswa</h2>
-          <p className="text-sm font-semibold">Total tampil: {total}</p>
+          <p className="text-sm font-semibold">Total data tampil: {total}</p>
         </div>
 
         <div className="flex flex-wrap gap-3">

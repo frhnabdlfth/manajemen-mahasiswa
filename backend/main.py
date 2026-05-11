@@ -1091,20 +1091,41 @@ def create_mahasiswa(
 
 @app.put("/mahasiswa/{mahasiswa_id}")
 def update_mahasiswa(
-    mahasiswa_id: int, 
+    mahasiswa_id: int,
     data: MahasiswaRequest,
     current_admin: dict = Depends(get_current_admin)
 ):
+    conn = None
+    cursor = None
+
     try:
         validate_mahasiswa(data)
 
-
         conn = get_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
+
+        # Cek dulu apakah data mahasiswa ada
+        cursor.execute(
+            "SELECT id FROM mahasiswa WHERE id = %s",
+            (mahasiswa_id,),
+        )
+
+        existing = cursor.fetchone()
+
+        if not existing:
+            raise HTTPException(
+                status_code=404,
+                detail="Data mahasiswa tidak ditemukan."
+            )
 
         sql = """
             UPDATE mahasiswa
-            SET nim=%s, nama=%s, email=%s, jurusan=%s, angkatan=%s, tipe=%s
+            SET nim=%s,
+                nama=%s,
+                email=%s,
+                jurusan=%s,
+                angkatan=%s,
+                tipe=%s
             WHERE id=%s
         """
 
@@ -1123,25 +1144,31 @@ def update_mahasiswa(
 
         conn.commit()
 
-        if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Data mahasiswa tidak ditemukan.")
-
-        cursor.close()
-        conn.close()
-
         return {
             "message": "Data mahasiswa berhasil diperbarui."
         }
 
     except ValidationException as error:
         raise HTTPException(status_code=400, detail=str(error))
+
     except mysql.connector.IntegrityError:
         raise HTTPException(status_code=409, detail="NIM sudah digunakan.")
+
     except HTTPException:
         raise
+
     except Exception as error:
+        if conn:
+            conn.rollback()
+
         raise HTTPException(status_code=500, detail=str(error))
 
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
 
 @app.delete("/mahasiswa/{mahasiswa_id}")
 def delete_mahasiswa(

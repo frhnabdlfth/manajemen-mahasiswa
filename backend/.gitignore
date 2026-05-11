@@ -1,0 +1,30 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.log
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Data / export files
+data/
+*.json
+
+# Docker local
+docker-compose.override.yml
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
