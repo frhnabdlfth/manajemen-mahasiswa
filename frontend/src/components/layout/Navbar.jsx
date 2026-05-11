@@ -81,7 +81,7 @@ export default function Navbar({ authUser, onLogout }) {
                 duration: 0.16,
                 ease: "easeOut",
               }}
-              className="absolute right-10 lg:right-20 z-20 mt-3 w-56 rounded-[20px] border-[4px] border-black bg-white p-2 shadow-[6px_6px_0_#000]"
+              className="absolute right-10 lg:right-15 z-20 mt-3 w-56 rounded-[20px] border-[4px] border-black bg-white p-2 shadow-[6px_6px_0_#000]"
             >
               <button
                 type="button"
