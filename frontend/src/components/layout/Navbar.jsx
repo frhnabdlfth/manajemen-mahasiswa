@@ -57,10 +57,10 @@ export default function Navbar({ authUser, onLogout }) {
 
             <div className="hidden text-left lg:block">
               <b className="block max-w-44 truncate text-sm font-black">
-                {authUser?.nama || "Admin"}
+                {authUser?.nama || "-"}
               </b>
               <span className="block text-xs font-semibold">
-                {authUser?.role || "Admin"}
+                {authUser?.role || "-"}
               </span>
             </div>
 
@@ -82,15 +82,6 @@ export default function Navbar({ authUser, onLogout }) {
                 }}
                 className="absolute top-full -right-2 z-50 mt-3 w-56 rounded-[20px] border-[4px] border-black bg-white p-2 shadow-[6px_6px_0_#000]"
               >
-                <div className="mb-2 rounded-[16px] border-[3px] border-black bg-[#FFF7D6] px-4 py-3">
-                  <p className="truncate text-sm font-black">
-                    {authUser?.nama || "-"}
-                  </p>
-                  <p className="text-xs font-bold text-slate-700">
-                    {authUser?.role || "-"}
-                  </p>
-                </div>
-
                 <button
                   type="button"
                   onClick={onLogout}
