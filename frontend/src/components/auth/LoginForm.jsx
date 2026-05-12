@@ -20,7 +20,7 @@ export default function LoginForm({
         name="username"
         value={form.username}
         onChange={onChange}
-        placeholder="username"
+        placeholder="Masukkan username"
       />
 
       <AuthPasswordInput
