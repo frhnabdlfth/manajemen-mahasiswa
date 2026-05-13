@@ -1,4 +1,4 @@
-import { UserRound } from "lucide-react";
+import { UserRound, Mail } from "lucide-react";
 import AuthInput from "./AuthInput.jsx";
 import AuthPasswordInput from "./AuthPasswordInput.jsx";
 
@@ -15,12 +15,13 @@ export default function LoginForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <AuthInput
-        label="Username"
-        icon={<UserRound size={20} />}
-        name="username"
-        value={form.username}
+        label="Email"
+        icon={<Mail size={20} />}
+        name="email"
+        value={form.email}
         onChange={onChange}
-        placeholder="Masukkan username"
+        placeholder="email@gmail.com"
+        type="email"
       />
 
       <AuthPasswordInput

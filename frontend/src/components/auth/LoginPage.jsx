@@ -60,8 +60,14 @@ export default function LoginPage({ onLogin }) {
   };
 
   const validateLogin = () => {
-    if (!form.username.trim()) return "Username wajib diisi dong.";
+    if (!form.email.trim()) return "Email wajib diisi dong.";
+
+    if (!emailRegex.test(form.email.trim())) {
+      return "Format email tidak valid.";
+    }
+
     if (!form.password) return "Password wajib diisi dong.";
+
     return "";
   };
 
@@ -108,7 +114,7 @@ export default function LoginPage({ onLogin }) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        username: form.username.trim(),
+        email: form.email.trim().toLowerCase(),
         password: form.password,
       }),
     });
@@ -154,6 +160,7 @@ export default function LoginPage({ onLogin }) {
 
     setForm({
       ...emptyForm,
+      username: result.username || form.username.trim(),
       email: result.email || registeredEmail,
     });
   };
@@ -184,7 +191,7 @@ export default function LoginPage({ onLogin }) {
 
     setForm({
       ...emptyForm,
-      username: form.email.trim().toLowerCase(),
+      email: result.email || form.email.trim().toLowerCase(),
     });
   };
 
