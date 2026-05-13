@@ -11,10 +11,10 @@ export default function AuthHeader({ mode }) {
       : "Login Admin";
 
   const subtitle = isRegister
-    ? "Buat akun baru dan cek email untuk kode verifikasi."
+    ? "Buat akun baru dan cek email untuk kode verifikasi"
     : isVerify
-      ? "Masukkan email dan kode 6 digit yang dikirim ke Gmail."
-      : "Masukkan username dan password.";
+      ? "Masukkan email dan kode 6 digit yang dikirim ke Gmail"
+      : "Masukkan email dan password";
 
   return (
     <>
@@ -29,10 +29,10 @@ export default function AuthHeader({ mode }) {
 
         <p className="mt-2 text-sm font-bold">
           {isRegister
-            ? "Daftar akun admin baru."
+            ? "Daftar akun admin baru"
             : isVerify
-              ? "Verifikasi email akun."
-              : "Login admin untuk masuk ke dashboard."}
+              ? "Verifikasi email akun"
+              : "Login admin untuk masuk ke dashboard"}
         </p>
       </div>
 

@@ -323,19 +323,42 @@ export default function App() {
 
   const exportFile = async () => {
     try {
+      setLoading(true);
+
       const response = await fetch(`${API_URL}/file/export`, {
         headers: getAuthHeaders(),
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.detail || "Export file gagal.");
+        const text = await response.text();
+
+        let errorMessage = "Export file gagal.";
+
+        try {
+          const result = JSON.parse(text);
+          errorMessage = result.detail || errorMessage;
+        } catch {
+          errorMessage = text || errorMessage;
+        }
+
+        throw new Error(errorMessage);
       }
 
-      setMessage(result.message);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "mahasiswa_data.json";
+      document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
