@@ -51,6 +51,7 @@ export default function RegisterForm({
         show={showPassword}
         setShow={setShowPassword}
         placeholder="Masukkan password"
+        maxLength={10}
       />
 
       <AuthPasswordInput
@@ -61,6 +62,7 @@ export default function RegisterForm({
         show={showConfirmPassword}
         setShow={setShowConfirmPassword}
         placeholder="Ulangi password"
+        maxLength={10}
       />
 
       <div className="rounded-[18px] border-[4px] border-black bg-[#FFDE59] px-4 py-3 text-xs font-black shadow-[5px_5px_0_#000]">

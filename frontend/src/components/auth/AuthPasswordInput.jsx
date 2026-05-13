@@ -1,4 +1,4 @@
-import { Eye, EyeOff, Lock } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole } from "lucide-react";
 
 export default function AuthPasswordInput({
   label,
@@ -8,6 +8,7 @@ export default function AuthPasswordInput({
   show,
   setShow,
   placeholder,
+  maxLength,
 }) {
   return (
     <label className="block">
@@ -15,8 +16,8 @@ export default function AuthPasswordInput({
         {label}
       </span>
 
-      <div className="flex h-13 min-h-13 items-center gap-3 rounded-[18px] border-[4px] border-black bg-[#FFF7D6] px-4 shadow-[5px_5px_0_#000] focus-within:bg-white">
-        <Lock size={20} className="shrink-0" />
+      <div className="flex h-13 min-h-13 items-center gap-3 rounded-[18px] border-[4px] border-black bg-[#FFF7D6] px-4 shadow-[5px_5px_0_#000]">
+        <LockKeyhole size={20} />
 
         <input
           name={name}
@@ -24,16 +25,19 @@ export default function AuthPasswordInput({
           onChange={onChange}
           type={show ? "text" : "password"}
           placeholder={placeholder}
+          maxLength={maxLength}
+          autoComplete={
+            name === "confirm_password" ? "new-password" : "new-password"
+          }
           className="w-full bg-transparent text-sm font-black outline-none placeholder:text-slate-500"
         />
 
         <button
           type="button"
           onClick={() => setShow((current) => !current)}
-          className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-[12px] border-[3px] border-black bg-white shadow-[3px_3px_0_#000] transition hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_#000]"
-          aria-label="Toggle password"
+          className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-[10px] border-[3px] border-black bg-white shadow-[2px_2px_0_#000]"
         >
-          {show ? <EyeOff size={18} /> : <Eye size={18} />}
+          {show ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
       </div>
     </label>

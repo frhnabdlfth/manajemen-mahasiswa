@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence } from "framer-motion";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { apiFetch } from "./utils/apiFetch";
 
+import LandingPage from "./components/landing/LandingPage.jsx";
 import LoginPage from "./components/auth/LoginPage.jsx";
-import Navbar from "./components/layout/Navbar.jsx";
-import MahasiswaToolbar from "./components/mahasiswa/MahasiswaToolbar.jsx";
-import MahasiswaTable from "./components/mahasiswa/MahasiswaTable.jsx";
-import MahasiswaFormModal from "./components/mahasiswa/MahasiswaFormModal.jsx";
-import AlertMessage from "./components/ui/AlertMessage.jsx";
-import ConfirmModal from "./components/ui/ConfirmModal.jsx";
+import DashboardPage from "./pages/DashboardPage.jsx";
+import ProtectedRoute from "./routes/ProtectedRoute.jsx";
+
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./config/auth";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -21,7 +20,7 @@ function getAuthHeaders() {
   };
 }
 
-const emptyForm = {
+const emptyMahasiswaForm = {
   nim: "",
   nama: "",
   email: "",
@@ -48,11 +47,13 @@ const sortFieldLabel = {
 };
 
 export default function App() {
+  const navigate = useNavigate();
+
   const [authUser, setAuthUser] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   const [mahasiswa, setMahasiswa] = useState([]);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(emptyMahasiswaForm);
   const [editId, setEditId] = useState(null);
 
   const [searchInput, setSearchInput] = useState("");
@@ -67,25 +68,46 @@ export default function App() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem(AUTH_TOKEN_KEY);
-    const savedUser = localStorage.getItem(AUTH_USER_KEY);
+    const checkAuth = async () => {
+      const savedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+      const savedUser = localStorage.getItem(AUTH_USER_KEY);
 
-    if (savedToken && savedUser) {
+      if (!savedToken || !savedUser) {
+        setCheckingAuth(false);
+        return;
+      }
+
       try {
-        setAuthUser(JSON.parse(savedUser));
+        const response = await fetch(`${API_URL}/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${savedToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Token invalid.");
+        }
+
+        const result = await response.json();
+
+        setAuthUser(result.user || JSON.parse(savedUser));
       } catch {
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(AUTH_USER_KEY);
+        setAuthUser(null);
+      } finally {
+        setCheckingAuth(false);
       }
-    }
+    };
 
-    setCheckingAuth(false);
+    checkAuth();
   }, []);
 
   const handleLogin = (token, user) => {
     localStorage.setItem(AUTH_TOKEN_KEY, token);
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
     setAuthUser(user);
+    navigate("/dashboard");
   };
 
   const handleLogout = () => {
@@ -93,19 +115,27 @@ export default function App() {
     localStorage.removeItem(AUTH_USER_KEY);
     setAuthUser(null);
     setMahasiswa([]);
+    navigate("/login");
   };
 
-  const filteredMahasiswa = useMemo(() => {
-    return mahasiswa;
-  }, [mahasiswa]);
+  const handleSessionExpired = () => {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_USER_KEY);
+    setAuthUser(null);
+    setMahasiswa([]);
+    setMessage("Sesi login kamu sudah habis. Silakan login ulang.");
+    navigate("/login");
+  };
+
+  const filteredMahasiswa = useMemo(() => mahasiswa, [mahasiswa]);
 
   const handleChangeAlgorithm = (selectedAlgorithm) => {
     setAlgorithm(selectedAlgorithm);
 
-    const message = sortComplexityInfo[selectedAlgorithm];
+    const info = sortComplexityInfo[selectedAlgorithm];
 
-    if (message) {
-      setMessage(message);
+    if (info) {
+      setMessage(info);
     }
   };
 
@@ -113,7 +143,9 @@ export default function App() {
     setSortBy(selectedSortBy);
 
     setMessage(
-      `Data akan diurutkan berdasarkan ${sortFieldLabel[selectedSortBy] || selectedSortBy}.`,
+      `Data akan diurutkan berdasarkan ${
+        sortFieldLabel[selectedSortBy] || selectedSortBy
+      }.`,
     );
   };
 
@@ -126,11 +158,10 @@ export default function App() {
         setKeyword("");
       }
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_URL}/mahasiswa?sort_by=${sortBy}&algorithm=${algorithm}`,
-        {
-          headers: getAuthHeaders(),
-        },
+        {},
+        handleSessionExpired,
       );
 
       const result = await response.json();
@@ -163,7 +194,7 @@ export default function App() {
   };
 
   const resetForm = () => {
-    setForm(emptyForm);
+    setForm(emptyMahasiswaForm);
     setEditId(null);
   };
 
@@ -195,11 +226,14 @@ export default function App() {
 
       const method = editId ? "PUT" : "POST";
 
-      const response = await fetch(url, {
-        method,
-        headers: getAuthHeaders(),
-        body: JSON.stringify(payload),
-      });
+      const response = await apiFetch(
+        url,
+        {
+          method,
+          body: JSON.stringify(payload),
+        },
+        handleSessionExpired,
+      );
 
       const result = await response.json();
 
@@ -209,7 +243,7 @@ export default function App() {
 
       setMessage(result.message);
       closeModal();
-      fetchMahasiswa();
+      await fetchMahasiswa();
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -219,6 +253,7 @@ export default function App() {
 
   const handleEdit = (item) => {
     setEditId(item.id);
+
     setForm({
       nim: item.nim,
       nama: item.nama,
@@ -227,6 +262,7 @@ export default function App() {
       angkatan: item.angkatan,
       tipe: item.tipe,
     });
+
     setIsModalOpen(true);
   };
 
@@ -245,10 +281,13 @@ export default function App() {
     try {
       setLoading(true);
 
-      const response = await fetch(`${API_URL}/mahasiswa/${deleteTarget.id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
+      const response = await apiFetch(
+        `${API_URL}/mahasiswa/${deleteTarget.id}`,
+        {
+          method: "DELETE",
+        },
+        handleSessionExpired,
+      );
 
       const result = await response.json();
 
@@ -258,7 +297,7 @@ export default function App() {
 
       setMessage(result.message);
       setDeleteTarget(null);
-      fetchMahasiswa();
+      await fetchMahasiswa();
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -286,16 +325,20 @@ export default function App() {
       let url = "";
 
       if (searchAlgorithm === "binary") {
-        url = `${API_URL}/mahasiswa/search/binary?nim=${encodeURIComponent(keywordValue)}`;
+        url = `${API_URL}/mahasiswa/search/binary?nim=${encodeURIComponent(
+          keywordValue,
+        )}`;
       } else if (searchAlgorithm === "linear") {
-        url = `${API_URL}/mahasiswa/search/linear?keyword=${encodeURIComponent(keywordValue)}`;
+        url = `${API_URL}/mahasiswa/search/linear?keyword=${encodeURIComponent(
+          keywordValue,
+        )}`;
       } else {
-        url = `${API_URL}/mahasiswa/search/sequential?keyword=${encodeURIComponent(keywordValue)}`;
+        url = `${API_URL}/mahasiswa/search/sequential?keyword=${encodeURIComponent(
+          keywordValue,
+        )}`;
       }
 
-      const response = await fetch(url, {
-        headers: getAuthHeaders(),
-      });
+      const response = await apiFetch(url, {}, handleSessionExpired);
 
       const result = await response.json();
 
@@ -325,13 +368,14 @@ export default function App() {
     try {
       setLoading(true);
 
-      const response = await fetch(`${API_URL}/file/export`, {
-        headers: getAuthHeaders(),
-      });
+      const response = await apiFetch(
+        `${API_URL}/file/export`,
+        {},
+        handleSessionExpired,
+      );
 
       if (!response.ok) {
         const text = await response.text();
-
         let errorMessage = "Export file gagal.";
 
         try {
@@ -364,9 +408,11 @@ export default function App() {
 
   const readFile = async () => {
     try {
-      const response = await fetch(`${API_URL}/file/read`, {
-        headers: getAuthHeaders(),
-      });
+      const response = await apiFetch(
+        `${API_URL}/file/read`,
+        {},
+        handleSessionExpired,
+      );
 
       const result = await response.json();
 
@@ -391,84 +437,134 @@ export default function App() {
     );
   }
 
-  if (!authUser) {
-    return <LoginPage onLogin={handleLogin} />;
-  }
-
   return (
-    <main className="min-h-screen bg-[#FFF7D6] p-4 text-slate-950 md:p-6">
-      <div className="mx-auto max-w-7xl space-y-5">
-        <Navbar authUser={authUser} onLogout={handleLogout} />
-
-        <AnimatePresence>
-          {message && (
-            <AlertMessage message={message} onClose={() => setMessage("")} />
-          )}
-        </AnimatePresence>
-
-        <section className="grid gap-5">
-          <MahasiswaToolbar
-            total={filteredMahasiswa.length}
-            keyword={searchInput}
-            setKeyword={setSearchInput}
-            searchAlgorithm={searchAlgorithm}
-            setSearchAlgorithm={setSearchAlgorithm}
-            sortBy={sortBy}
-            setSortBy={handleChangeSortBy}
-            algorithm={algorithm}
-            setAlgorithm={handleChangeAlgorithm}
-            onSearch={handleBackendSearch}
-            onOpenCreate={openCreateModal}
-            onExport={exportFile}
-            onReadFile={readFile}
-            onRefresh={() => fetchMahasiswa(true)}
-            loading={loading}
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <LandingPage
+            onGoLogin={() => navigate("/login")}
+            onGoRegister={() => navigate("/register")}
           />
-
-          <MahasiswaTable
-            data={filteredMahasiswa}
-            onEdit={handleEdit}
-            onDelete={openDeleteModal}
-          />
-
-          <section className="rounded-[28px] border-[4px] border-black bg-white p-5 shadow-[8px_8px_0_#000]">
-            <h3 className="mb-3 text-lg font-black">Time Complexity</h3>
-            <ul className="list-inside list-disc space-y-1 text-sm font-medium">
-              <li>Linear Search / Sequential Search: O(n)</li>
-              <li>Binary Search: O(log n), data harus terurut</li>
-              <li>Bubble / Insertion / Selection Sort: O(n²)</li>
-              <li>Merge Sort: O(n log n)</li>
-              <li>File Export / Read: O(n)</li>
-            </ul>
-          </section>
-        </section>
-      </div>
-
-      <MahasiswaFormModal
-        open={isModalOpen}
-        editId={editId}
-        form={form}
-        loading={loading}
-        onChange={handleChange}
-        onClose={closeModal}
-        onSubmit={handleSubmit}
-      />
-
-      <ConfirmModal
-        open={Boolean(deleteTarget)}
-        title="Hapus Mahasiswa?"
-        message={
-          deleteTarget
-            ? `Data mahasiswa "${deleteTarget.nama}" dengan NIM ${deleteTarget.nim} akan dihapus permanen.`
-            : "Data mahasiswa akan dihapus permanen."
         }
-        confirmText="Hapus"
-        cancelText="Batal"
-        variant="danger"
-        loading={loading}
-        onConfirm={handleDelete}
-        onClose={closeDeleteModal}
       />
-    </main>
+
+      <Route
+        path="/login"
+        element={
+          authUser ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <LoginPage initialMode="login" onLogin={handleLogin} />
+          )
+        }
+      />
+
+      <Route
+        path="/register"
+        element={
+          authUser ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <LoginPage initialMode="register" onLogin={handleLogin} />
+          )
+        }
+      />
+
+      <Route
+        path="/verify-email"
+        element={
+          authUser ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <LoginPage initialMode="verify" onLogin={handleLogin} />
+          )
+        }
+      />
+
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardPage
+              view="dashboard"
+              authUser={authUser}
+              onLogout={handleLogout}
+              message={message}
+              setMessage={setMessage}
+              filteredMahasiswa={filteredMahasiswa}
+              searchInput={searchInput}
+              setSearchInput={setSearchInput}
+              searchAlgorithm={searchAlgorithm}
+              setSearchAlgorithm={setSearchAlgorithm}
+              sortBy={sortBy}
+              handleChangeSortBy={handleChangeSortBy}
+              algorithm={algorithm}
+              handleChangeAlgorithm={handleChangeAlgorithm}
+              handleBackendSearch={handleBackendSearch}
+              openCreateModal={openCreateModal}
+              exportFile={exportFile}
+              readFile={readFile}
+              fetchMahasiswa={fetchMahasiswa}
+              loading={loading}
+              handleEdit={handleEdit}
+              openDeleteModal={openDeleteModal}
+              isModalOpen={isModalOpen}
+              editId={editId}
+              form={form}
+              handleChange={handleChange}
+              closeModal={closeModal}
+              handleSubmit={handleSubmit}
+              deleteTarget={deleteTarget}
+              handleDelete={handleDelete}
+              closeDeleteModal={closeDeleteModal}
+            />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/mahasiswa"
+        element={
+          <ProtectedRoute>
+            <DashboardPage
+              view="mahasiswa"
+              authUser={authUser}
+              onLogout={handleLogout}
+              message={message}
+              setMessage={setMessage}
+              filteredMahasiswa={filteredMahasiswa}
+              searchInput={searchInput}
+              setSearchInput={setSearchInput}
+              searchAlgorithm={searchAlgorithm}
+              setSearchAlgorithm={setSearchAlgorithm}
+              sortBy={sortBy}
+              handleChangeSortBy={handleChangeSortBy}
+              algorithm={algorithm}
+              handleChangeAlgorithm={handleChangeAlgorithm}
+              handleBackendSearch={handleBackendSearch}
+              openCreateModal={openCreateModal}
+              exportFile={exportFile}
+              readFile={readFile}
+              fetchMahasiswa={fetchMahasiswa}
+              loading={loading}
+              handleEdit={handleEdit}
+              openDeleteModal={openDeleteModal}
+              isModalOpen={isModalOpen}
+              editId={editId}
+              form={form}
+              handleChange={handleChange}
+              closeModal={closeModal}
+              handleSubmit={handleSubmit}
+              deleteTarget={deleteTarget}
+              handleDelete={handleDelete}
+              closeDeleteModal={closeDeleteModal}
+            />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
