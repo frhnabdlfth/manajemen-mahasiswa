@@ -8,7 +8,6 @@ export default function AuthPasswordInput({
   show,
   setShow,
   placeholder,
-  maxLength,
 }) {
   return (
     <label className="block">
@@ -25,7 +24,6 @@ export default function AuthPasswordInput({
           onChange={onChange}
           type={show ? "text" : "password"}
           placeholder={placeholder}
-          maxLength={maxLength}
           autoComplete={
             name === "confirm_password" ? "new-password" : "new-password"
           }

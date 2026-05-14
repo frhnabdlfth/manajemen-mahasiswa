@@ -64,6 +64,7 @@ export default function App() {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("success");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -172,6 +173,7 @@ export default function App() {
 
       setMahasiswa(result.data);
     } catch (error) {
+      setMessageType("error");
       setMessage(error.message);
     } finally {
       setLoading(false);
@@ -241,10 +243,12 @@ export default function App() {
         throw new Error(result.detail || "Terjadi kesalahan.");
       }
 
+      setMessageType("success");
       setMessage(result.message);
       closeModal();
       await fetchMahasiswa();
     } catch (error) {
+      setMessageType("error");
       setMessage(error.message);
     } finally {
       setLoading(false);
@@ -295,10 +299,12 @@ export default function App() {
         throw new Error(result.detail || "Gagal menghapus data.");
       }
 
+      setMessageType("success");
       setMessage(result.message);
       setDeleteTarget(null);
       await fetchMahasiswa();
     } catch (error) {
+      setMessageType("error");
       setMessage(error.message);
     } finally {
       setLoading(false);
@@ -309,11 +315,13 @@ export default function App() {
     const keywordValue = searchInput.trim();
 
     if (!keywordValue) {
+      setMessageType("error");
       setMessage("Masukkan kata kunci pencarian terlebih dahulu.");
       return;
     }
 
     if (!searchAlgorithm) {
+      setMessageType("error");
       setMessage("Pilih algoritma search terlebih dahulu.");
       return;
     }
@@ -354,10 +362,12 @@ export default function App() {
         setMahasiswa([]);
       }
 
+      setMessageType("success");
       setMessage(
         `Pencarian menggunakan ${result.algorithm}. Complexity: ${result.complexity}`,
       );
     } catch (error) {
+      setMessageType("error");
       setMessage(error.message);
     } finally {
       setLoading(false);
@@ -377,6 +387,8 @@ export default function App() {
       if (!response.ok) {
         const text = await response.text();
         let errorMessage = "Export file gagal.";
+        setMessageType("error");
+        setMessage(errorMessage);
 
         try {
           const result = JSON.parse(text);
@@ -400,6 +412,7 @@ export default function App() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
+      setMessageType("error");
       setMessage(error.message);
     } finally {
       setLoading(false);
@@ -421,8 +434,10 @@ export default function App() {
       }
 
       setMahasiswa(result.data);
+      setMessageType("success");
       setMessage(result.message);
     } catch (error) {
+      setMessageType("error");
       setMessage(error.message);
     }
   };
@@ -532,6 +547,7 @@ export default function App() {
               authUser={authUser}
               onLogout={handleLogout}
               message={message}
+              messageType={messageType}
               setMessage={setMessage}
               filteredMahasiswa={filteredMahasiswa}
               searchInput={searchInput}

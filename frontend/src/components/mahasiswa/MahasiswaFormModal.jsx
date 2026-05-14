@@ -137,7 +137,8 @@ export default function MahasiswaFormModal({
             name="nim"
             value={form.nim}
             onChange={handleChange}
-            placeholder="Contoh: 202401001"
+            placeholder="Contoh: 20240021003"
+            maxLength={11}
           />
           <ErrorText message={errors.nim} />
         </div>

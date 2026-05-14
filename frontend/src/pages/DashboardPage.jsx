@@ -14,6 +14,7 @@ export default function DashboardPage({
   onLogout,
 
   message,
+  messageType,
   setMessage,
   filteredMahasiswa,
   searchInput,
@@ -51,7 +52,11 @@ export default function DashboardPage({
 
         <AnimatePresence>
           {message && (
-            <AlertMessage message={message} onClose={() => setMessage("")} />
+            <AlertMessage
+              message={message}
+              type={messageType}
+              onClose={() => setMessage("")}
+            />
           )}
         </AnimatePresence>
 

@@ -46,7 +46,7 @@ export default function MahasiswaTable({ data, onEdit, onDelete }) {
                     duration: 0.18,
                     delay: index * 0.025,
                   }}
-                  className="odd:bg-white even:bg-[#FFF7D6]"
+                  className="odd:bg-white even:bg-[#FFF7D6] text-nowrap"
                 >
                   <td className="border-b-[3px] border-black px-4 py-4 font-semibold text-center">
                     {index + 1}

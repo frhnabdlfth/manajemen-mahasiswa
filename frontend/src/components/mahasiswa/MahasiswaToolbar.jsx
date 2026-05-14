@@ -49,14 +49,14 @@ export default function MahasiswaToolbar({
           <p className="text-sm font-semibold">Total data tampil: {total}</p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
           <button
             type="button"
             onClick={onOpenCreate}
             className="cursor-pointer rounded-[18px] border-[4px] border-black bg-[#4ADE80] px-4 py-3 text-sm font-black shadow-[4px_4px_0_#000] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]"
           >
-            <Plus size={16} className="mr-2 inline" />
-            Tambah
+            <Plus size={20} className="mr-0 lg:mr-2 inline" />
+            <span className="hidden lg:inline">Tambah</span>
           </button>
 
           <button
@@ -64,8 +64,8 @@ export default function MahasiswaToolbar({
             onClick={onExport}
             className="cursor-pointer rounded-[18px] border-[4px] border-black bg-[#60A5FA] px-4 py-3 text-sm font-black shadow-[4px_4px_0_#000] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]"
           >
-            <Download size={16} className="mr-2 inline" />
-            Export File
+            <Download size={20} className="mr-0 lg:mr-2 inline" />
+            <span className="hidden lg:inline">Export File</span>
           </button>
 
           <button
@@ -73,8 +73,8 @@ export default function MahasiswaToolbar({
             onClick={onReadFile}
             className="cursor-pointer rounded-[18px] border-[4px] border-black bg-[#FDBA74] px-4 py-3 text-sm font-black shadow-[4px_4px_0_#000] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]"
           >
-            <Upload size={16} className="mr-2 inline" />
-            Read File
+            <Upload size={20} className="mr-0 lg:mr-2 inline" />
+            <span className="hidden lg:inline">Read File</span>
           </button>
 
           <button
@@ -83,8 +83,8 @@ export default function MahasiswaToolbar({
             disabled={loading}
             className="cursor-pointer rounded-[18px] border-[4px] border-black bg-[#F9A8D4] px-4 py-3 text-sm font-black shadow-[4px_4px_0_#000] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <RefreshCcw size={16} className="mr-2 inline" />
-            Refresh
+            <RefreshCcw size={20} className="mr-0 lg:mr-2 inline" />
+            <span className="hidden lg:inline">Refresh</span>
           </button>
         </div>
       </div>

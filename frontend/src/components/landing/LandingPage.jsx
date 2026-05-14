@@ -118,7 +118,7 @@ const sortAlgorithms = [
 export default function LandingPage({ onGoLogin, onGoRegister }) {
   return (
     <main className="min-h-screen bg-[#8E92B8] p-4 text-slate-950 md:p-8">
-      <div className="mx-auto max-w-7xl overflow-hidden border-[4px] border-black bg-white shadow-[10px_10px_0_#000]">
+      <div className="mx-auto max-w-8xl overflow-hidden border-[4px] border-black bg-white shadow-[10px_10px_0_#000]">
         <Navbar onGoLogin={onGoLogin} onGoRegister={onGoRegister} />
 
         <HeroSection onGoRegister={onGoRegister} />
@@ -139,12 +139,12 @@ function Navbar({ onGoLogin, onGoRegister }) {
   return (
     <header className="flex items-center justify-between border-b-[4px] border-black bg-white px-5 py-4 md:px-8">
       <div className="flex items-center gap-3">
-        <div className="grid h-8 w-8 lg:h-11 lg:w-11 place-items-center rounded-[14px] border-[3px] border-black bg-[#4ADE80] shadow-[3px_3px_0_#000]">
+        <div className="grid h-9 w-9 lg:h-11 lg:w-11 place-items-center rounded-[14px] border-[3px] border-black bg-[#4ADE80] shadow-[3px_3px_0_#000]">
           <GraduationCap size={24} />
         </div>
 
         <div>
-          <b className="block text-xl font-black leading-none">
+          <b className="hidden lg:block text-xl font-black leading-none">
             Manajemen Mahasiswa
           </b>
         </div>
