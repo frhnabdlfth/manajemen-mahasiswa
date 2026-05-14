@@ -124,6 +124,7 @@ export default function App() {
     localStorage.removeItem(AUTH_USER_KEY);
     setAuthUser(null);
     setMahasiswa([]);
+    setMessageType("error");
     setMessage("Sesi login kamu sudah habis. Silakan login ulang.");
     navigate("/login");
   };
@@ -315,8 +316,8 @@ export default function App() {
     const keywordValue = searchInput.trim();
 
     if (!keywordValue) {
-      setMessageType("error");
-      setMessage("Masukkan kata kunci pencarian terlebih dahulu.");
+      setKeyword("");
+      await fetchMahasiswa(true);
       return;
     }
 
@@ -354,23 +355,40 @@ export default function App() {
         throw new Error(result.detail || "Pencarian gagal.");
       }
 
+      let searchResult = [];
+
       if (Array.isArray(result.result)) {
-        setMahasiswa(result.result);
+        searchResult = result.result;
       } else if (result.result) {
-        setMahasiswa([result.result]);
-      } else {
-        setMahasiswa([]);
+        searchResult = [result.result];
+      }
+
+      setMahasiswa(searchResult);
+
+      if (searchResult.length === 0) {
+        setMessageType("error");
+        setMessage(`Data mahasiswa "${keywordValue}" tidak ditemukan.`);
+        return;
       }
 
       setMessageType("success");
       setMessage(
-        `Pencarian menggunakan ${result.algorithm}. Complexity: ${result.complexity}`,
+        `Data mahasiswa "${keywordValue}" ditemukan menggunakan ${result.algorithm}. Complexity: ${result.complexity}`,
       );
     } catch (error) {
       setMessageType("error");
       setMessage(error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSearchInputChange = (value) => {
+    setSearchInput(value);
+
+    if (value.trim() === "" && keyword) {
+      setKeyword("");
+      fetchMahasiswa(true);
     }
   };
 
@@ -506,6 +524,7 @@ export default function App() {
               authUser={authUser}
               onLogout={handleLogout}
               message={message}
+              messageType={messageType}
               setMessage={setMessage}
               filteredMahasiswa={filteredMahasiswa}
               searchInput={searchInput}
@@ -551,7 +570,7 @@ export default function App() {
               setMessage={setMessage}
               filteredMahasiswa={filteredMahasiswa}
               searchInput={searchInput}
-              setSearchInput={setSearchInput}
+              setSearchInput={handleSearchInputChange}
               searchAlgorithm={searchAlgorithm}
               setSearchAlgorithm={setSearchAlgorithm}
               sortBy={sortBy}
