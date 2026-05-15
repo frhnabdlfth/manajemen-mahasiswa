@@ -96,6 +96,12 @@ export default function MahasiswaToolbar({
             <input
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  onSearch();
+                }
+              }}
               type="search"
               placeholder="Cari nama, NIM, jurusan..."
               className="w-full bg-transparent text-sm font-semibold outline-none placeholder:text-slate-500"

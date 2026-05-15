@@ -327,6 +327,14 @@ export default function App() {
       return;
     }
 
+    if (searchAlgorithm === "binary" && !/^[0-9]+$/.test(keywordValue)) {
+      setMessageType("error");
+      setMessage(
+        "Binary Search hanya bisa mencari berdasarkan NIM. Masukkan NIM berupa angka, bukan nama atau jurusan.",
+      );
+      return;
+    }
+
     try {
       setLoading(true);
       setKeyword(keywordValue);
@@ -347,9 +355,14 @@ export default function App() {
         )}`;
       }
 
+      const startTime = performance.now();
+
       const response = await apiFetch(url, {}, handleSessionExpired);
 
       const result = await response.json();
+
+      const endTime = performance.now();
+      const executionTime = (endTime - startTime).toFixed(3);
 
       if (!response.ok) {
         throw new Error(result.detail || "Pencarian gagal.");
@@ -367,13 +380,21 @@ export default function App() {
 
       if (searchResult.length === 0) {
         setMessageType("error");
-        setMessage(`Data mahasiswa "${keywordValue}" tidak ditemukan.`);
+
+        if (searchAlgorithm === "binary") {
+          setMessage(
+            `Data mahasiswa dengan NIM "${keywordValue}" tidak ditemukan. Binary Search hanya mencari berdasarkan NIM.`,
+          );
+        } else {
+          setMessage(`Data mahasiswa "${keywordValue}" tidak ditemukan.`);
+        }
+
         return;
       }
 
       setMessageType("success");
       setMessage(
-        `Data mahasiswa "${keywordValue}" ditemukan menggunakan ${result.algorithm}. Complexity: ${result.complexity}`,
+        `Data mahasiswa "${keywordValue}" ditemukan menggunakan ${result.algorithm}. Time: ${executionTime} ms. Best: O(1). Complexity: ${result.complexity}`,
       );
     } catch (error) {
       setMessageType("error");
