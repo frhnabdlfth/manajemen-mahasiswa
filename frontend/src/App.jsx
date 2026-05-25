@@ -6,6 +6,7 @@ import LandingPage from "./components/landing/LandingPage.jsx";
 import LoginPage from "./components/auth/LoginPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
+import ChangePasswordPage from "./pages/ChangePasswordPage.jsx";
 
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./config/auth";
 
@@ -481,6 +482,31 @@ export default function App() {
     }
   };
 
+  const handleChangePassword = async (payload) => {
+    try {
+      setLoading(true);
+
+      const response = await apiFetch(
+        `${API_URL}/auth/change-password`,
+        {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        },
+        handleSessionExpired,
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.detail || "Gagal mengubah password.");
+      }
+
+      return result;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (checkingAuth) {
     return (
       <main className="grid min-h-screen place-items-center bg-[#FFF7D6]">
@@ -615,6 +641,20 @@ export default function App() {
               deleteTarget={deleteTarget}
               handleDelete={handleDelete}
               closeDeleteModal={closeDeleteModal}
+            />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/change-password"
+        element={
+          <ProtectedRoute>
+            <ChangePasswordPage
+              authUser={authUser}
+              onLogout={handleLogout}
+              onChangePassword={handleChangePassword}
+              loading={loading}
             />
           </ProtectedRoute>
         }

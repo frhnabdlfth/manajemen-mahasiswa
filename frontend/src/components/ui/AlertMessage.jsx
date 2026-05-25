@@ -8,7 +8,7 @@ export default function AlertMessage({ message, type = "success", onClose }) {
 
     const timer = setTimeout(() => {
       onClose?.();
-    }, 5000);
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, [message, onClose]);
@@ -17,27 +17,16 @@ export default function AlertMessage({ message, type = "success", onClose }) {
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: -12, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -12, scale: 0.98 }}
-      transition={{ duration: 0.18 }}
-      className={`flex items-center justify-between gap-3 rounded-[24px] border-[4px] border-black ${bgColor} px-5 py-4 shadow-[6px_6px_0_#000]`}
+      role="alert"
+      initial={{ opacity: 0, x: 24, y: -12, scale: 0.96 }}
+      animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 24, y: -12, scale: 0.96 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className={`fixed right-4 top-4 z-[9999] flex w-[calc(100%-2rem)] max-w-[fit-content] items-center justify-between gap-3 rounded-[24px] border-[4px] border-black ${bgColor} px-5 py-4 shadow-[6px_6px_0_#000] sm:right-6 sm:top-6 sm:w-full`}
     >
-      <p className="text-sm font-black">{message}</p>
-
-      <motion.button
-        type="button"
-        onClick={onClose}
-        whileTap={{ scale: 0.92 }}
-        whileHover={{
-          x: 1,
-          y: 1,
-          boxShadow: "1px 1px 0 #000",
-        }}
-        className="cursor-pointer rounded-[12px] border-[3px] border-black bg-white p-1 shadow-[2px_2px_0_#000]"
-      >
-        <X size={16} />
-      </motion.button>
+      <p className="flex-1 break-words text-sm font-black leading-5">
+        {message}
+      </p>
     </motion.section>
   );
 }

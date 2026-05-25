@@ -5,11 +5,12 @@ import {
   User,
   LayoutDashboard,
   Users,
+  KeyRound,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 
-export default function Navbar({ authUser, onLogout }) {
+export default function Navbar({ authUser, onLogout, showNavigation = true }) {
   const [openDropdown, setOpenDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -117,6 +118,18 @@ export default function Navbar({ authUser, onLogout }) {
 
                   <button
                     type="button"
+                    onClick={() => {
+                      setOpenDropdown(false);
+                      navigate("/change-password");
+                    }}
+                    className="mb-2 flex w-full cursor-pointer items-center gap-3 rounded-[14px] border-[3px] border-black bg-[#FFDE59] px-4 py-3 text-left text-sm font-black shadow-[3px_3px_0_#000] transition hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_#000]"
+                  >
+                    <KeyRound size={18} />
+                    Ubah Password
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={onLogout}
                     className="flex w-full cursor-pointer items-center gap-3 rounded-[14px] border-[3px] border-black bg-[#FF8DA1] px-4 py-3 text-left text-sm font-black shadow-[3px_3px_0_#000] transition hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_#000]"
                   >
@@ -129,28 +142,29 @@ export default function Navbar({ authUser, onLogout }) {
           </div>
         </div>
       </div>
+      {showNavigation && (
+        <nav className="grid grid-cols-2 gap-2 rounded-[24px] border-[4px] border-black bg-white p-2 shadow-[6px_6px_0_#000] md:flex md:w-full md:items-center md:rounded-[22px]">
+          {navItems.map((item) => {
+            const active = location.pathname === item.path;
 
-      <nav className="grid grid-cols-2 gap-2 rounded-[24px] border-[4px] border-black bg-white p-2 shadow-[6px_6px_0_#000] md:flex md:w-full md:items-center md:rounded-[22px]">
-        {navItems.map((item) => {
-          const active = location.pathname === item.path;
-
-          return (
-            <button
-              key={item.path}
-              type="button"
-              onClick={() => navigate(item.path)}
-              className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-[18px] border-[3px] border-black px-4 py-3 text-sm font-black transition md:min-w-40 ${
-                active
-                  ? "bg-[#93C5FD] shadow-[3px_3px_0_#000]"
-                  : "bg-[#FFF7D6] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_#000]"
-              }`}
-            >
-              {item.icon}
-              {item.label}
-            </button>
-          );
-        })}
-      </nav>
+            return (
+              <button
+                key={item.path}
+                type="button"
+                onClick={() => navigate(item.path)}
+                className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-[18px] border-[3px] border-black px-4 py-3 text-sm font-black transition md:min-w-40 ${
+                  active
+                    ? "bg-[#93C5FD] shadow-[3px_3px_0_#000]"
+                    : "bg-[#FFF7D6] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_#000]"
+                }`}
+              >
+                {item.icon}
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+      )}
     </header>
   );
 }

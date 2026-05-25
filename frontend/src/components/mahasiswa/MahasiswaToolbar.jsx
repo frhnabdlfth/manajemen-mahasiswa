@@ -118,7 +118,7 @@ export default function MahasiswaToolbar({
           <button
             type="button"
             onClick={onSearch}
-            className="cursor-pointer rounded-[18px] border-[4px] border-black bg-[#FFDE59] px-4 py-3 text-sm font-black shadow-[4px_4px_0_#000] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]"
+            className="cursor-pointer rounded-[18px] border-[4px] border-black bg-[#FFDE59] px-4 py-2 text-sm font-black shadow-[4px_4px_0_#000] transition hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#000]"
           >
             Cari
           </button>
@@ -151,7 +151,7 @@ export default function MahasiswaToolbar({
             />
           </div>
 
-          <div className="rounded-[18px] border-[4px] border-black bg-[#FFF7D6] px-4 py-3 text-sm font-bold shadow-[4px_4px_0_#000]">
+          <div className="rounded-[18px] border-[4px] border-black bg-[#FFF7D6] px-4 py-[9px] text-sm font-bold shadow-[4px_4px_0_#000]">
             Data akan diurutkan otomatis berdasarkan field dan algoritma sorting
             yang dipilih.
           </div>
