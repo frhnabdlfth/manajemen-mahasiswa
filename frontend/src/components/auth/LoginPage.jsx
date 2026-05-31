@@ -294,7 +294,7 @@ export default function LoginPage({ initialMode = "login", onLogin }) {
   };
 
   return (
-    <AuthLayout mode={mode}>
+    <AuthLayout variant={initialMode === "register" ? "register" : "login"}>
       <AuthHeader mode={mode} />
 
       <AuthMessage type="error" message={error} />

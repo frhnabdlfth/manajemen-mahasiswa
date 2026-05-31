@@ -9,6 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 export default function DashboardOverview({ data = [] }) {
   const total = data.length;
@@ -177,10 +178,49 @@ function StatCard({ icon, title, value, color, desc }) {
       </div>
 
       <p className="text-sm font-black">{title}</p>
-      <p className="mt-1 text-4xl font-black">{value}</p>
+      <p className="mt-1 text-4xl font-black">
+        <AnimatedRandomValue value={value} />
+      </p>
       <p className="mt-2 text-xs font-bold">{desc}</p>
     </motion.article>
   );
+}
+
+function AnimatedRandomValue({ value }) {
+  const targetValue = Number(value) || 0;
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    let intervalId = null;
+    let timeoutId = null;
+
+    if (targetValue === 0) {
+      setDisplayValue(0);
+      return;
+    }
+
+    intervalId = window.setInterval(() => {
+      const randomValue = Math.floor(Math.random() * (targetValue + 20));
+      setDisplayValue(randomValue);
+    }, 45);
+
+    timeoutId = window.setTimeout(() => {
+      window.clearInterval(intervalId);
+      setDisplayValue(targetValue);
+    }, 900);
+
+    return () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
+
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [targetValue]);
+
+  return displayValue;
 }
 
 function BarChartRow({ label, value, percent, color }) {
