@@ -2,9 +2,11 @@ import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "../config/auth";
 
 export async function apiFetch(url, options = {}, onSessionExpired) {
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  const hasBody = Boolean(options.body);
 
   const headers = {
-    "Content-Type": "application/json",
+    Accept: "application/json",
+    ...(hasBody ? { "Content-Type": "application/json" } : {}),
     ...(options.headers || {}),
   };
 
@@ -13,11 +15,12 @@ export async function apiFetch(url, options = {}, onSessionExpired) {
   }
 
   const response = await fetch(url, {
+    cache: "no-store",
     ...options,
     headers,
   });
 
-  if (response.status === 401) {
+  if (response.status === 401 || response.status === 403) {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
 

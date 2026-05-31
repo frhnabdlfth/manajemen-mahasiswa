@@ -41,7 +41,22 @@ const sortFieldLabel = {
 export default function App() {
   const navigate = useNavigate();
 
-  const [authUser, setAuthUser] = useState(null);
+  const getStoredUser = () => {
+    try {
+      const storedUser = localStorage.getItem(AUTH_USER_KEY);
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch {
+      localStorage.removeItem(AUTH_USER_KEY);
+      return null;
+    }
+  };
+
+  const clearStoredAuth = () => {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_USER_KEY);
+  };
+
+  const [authUser, setAuthUser] = useState(() => getStoredUser());
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   const [mahasiswa, setMahasiswa] = useState([]);
@@ -60,37 +75,54 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
+  const handleSessionExpired = () => {
+    clearStoredAuth();
+    setAuthUser(null);
+    setMahasiswa([]);
+    setMessageType("error");
+    setMessage("Sesi login kamu sudah habis. Silakan login ulang.");
+    navigate("/login", { replace: true });
+  };
+
   useEffect(() => {
     let isMounted = true;
 
-    const clearStoredAuth = () => {
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      localStorage.removeItem(AUTH_USER_KEY);
-    };
-
     const checkAuth = async () => {
       const savedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+      const savedUser = getStoredUser();
 
       if (!savedToken) {
         clearStoredAuth();
+
         if (isMounted) {
           setAuthUser(null);
           setCheckingAuth(false);
         }
+
         return;
       }
 
+      if (savedUser && isMounted) {
+        setAuthUser(savedUser);
+      }
+
       try {
-        const response = await fetch(`${API_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${savedToken}`,
+        const response = await apiFetch(
+          `${API_URL}/auth/me`,
+          {
+            method: "GET",
           },
-        });
+          handleSessionExpired,
+        );
 
         const result = await response.json().catch(() => ({}));
 
         if (!response.ok || !result.user) {
-          throw new Error(result.detail || "Token invalid.");
+          if (savedUser && isMounted) {
+            setAuthUser(savedUser);
+          }
+
+          return;
         }
 
         localStorage.setItem(AUTH_USER_KEY, JSON.stringify(result.user));
@@ -99,9 +131,9 @@ export default function App() {
           setAuthUser(result.user);
         }
       } catch {
-        clearStoredAuth();
-
-        if (isMounted) {
+        if (savedUser && isMounted) {
+          setAuthUser(savedUser);
+        } else if (isMounted) {
           setAuthUser(null);
         }
       } finally {
@@ -121,26 +153,16 @@ export default function App() {
   const handleLogin = (token, user) => {
     localStorage.setItem(AUTH_TOKEN_KEY, token);
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+
     setAuthUser(user);
-    navigate("/dashboard");
+    navigate("/dashboard", { replace: true });
   };
 
   const handleLogout = () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(AUTH_USER_KEY);
+    clearStoredAuth();
     setAuthUser(null);
     setMahasiswa([]);
-    navigate("/login");
-  };
-
-  const handleSessionExpired = () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(AUTH_USER_KEY);
-    setAuthUser(null);
-    setMahasiswa([]);
-    setMessageType("error");
-    setMessage("Sesi login kamu sudah habis. Silakan login ulang.");
-    navigate("/login");
+    navigate("/login", { replace: true });
   };
 
   const filteredMahasiswa = useMemo(() => mahasiswa, [mahasiswa]);
@@ -151,6 +173,7 @@ export default function App() {
     const info = sortComplexityInfo[selectedAlgorithm];
 
     if (info) {
+      setMessageType("success");
       setMessage(info);
     }
   };
@@ -158,6 +181,7 @@ export default function App() {
   const handleChangeSortBy = (selectedSortBy) => {
     setSortBy(selectedSortBy);
 
+    setMessageType("success");
     setMessage(
       `Data akan diurutkan berdasarkan ${
         sortFieldLabel[selectedSortBy] || selectedSortBy
@@ -175,21 +199,25 @@ export default function App() {
       }
 
       const response = await apiFetch(
-        `${API_URL}/mahasiswa?sort_by=${sortBy}&algorithm=${algorithm}`,
-        {},
+        `${API_URL}/mahasiswa?sort_by=${encodeURIComponent(
+          sortBy,
+        )}&algorithm=${encodeURIComponent(algorithm)}`,
+        {
+          method: "GET",
+        },
         handleSessionExpired,
       );
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(result.detail || "Gagal mengambil data.");
       }
 
-      setMahasiswa(result.data);
+      setMahasiswa(Array.isArray(result.data) ? result.data : []);
     } catch (error) {
       setMessageType("error");
-      setMessage(error.message);
+      setMessage(error.message || "Gagal mengambil data.");
     } finally {
       setLoading(false);
     }
@@ -252,19 +280,19 @@ export default function App() {
         handleSessionExpired,
       );
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(result.detail || "Terjadi kesalahan.");
       }
 
       setMessageType("success");
-      setMessage(result.message);
+      setMessage(result.message || "Data berhasil disimpan.");
       closeModal();
       await fetchMahasiswa();
     } catch (error) {
       setMessageType("error");
-      setMessage(error.message);
+      setMessage(error.message || "Terjadi kesalahan.");
     } finally {
       setLoading(false);
     }
@@ -308,19 +336,19 @@ export default function App() {
         handleSessionExpired,
       );
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(result.detail || "Gagal menghapus data.");
       }
 
       setMessageType("success");
-      setMessage(result.message);
+      setMessage(result.message || "Data berhasil dihapus.");
       setDeleteTarget(null);
       await fetchMahasiswa();
     } catch (error) {
       setMessageType("error");
-      setMessage(error.message);
+      setMessage(error.message || "Gagal menghapus data.");
     } finally {
       setLoading(false);
     }
@@ -371,9 +399,15 @@ export default function App() {
 
       const startTime = performance.now();
 
-      const response = await apiFetch(url, {}, handleSessionExpired);
+      const response = await apiFetch(
+        url,
+        {
+          method: "GET",
+        },
+        handleSessionExpired,
+      );
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       const endTime = performance.now();
       const executionTime = (endTime - startTime).toFixed(3);
@@ -408,11 +442,11 @@ export default function App() {
 
       setMessageType("success");
       setMessage(
-        `Data mahasiswa "${keywordValue}" ditemukan menggunakan ${result.algorithm}. Time: ${executionTime} ms. Best: O(1). Complexity: ${result.complexity}`,
+        `Data mahasiswa "${keywordValue}" ditemukan menggunakan ${result.algorithm}. Time: ${executionTime} ms. Complexity: ${result.complexity}`,
       );
     } catch (error) {
       setMessageType("error");
-      setMessage(error.message);
+      setMessage(error.message || "Pencarian gagal.");
     } finally {
       setLoading(false);
     }
@@ -433,15 +467,16 @@ export default function App() {
 
       const response = await apiFetch(
         `${API_URL}/file/export`,
-        {},
+        {
+          method: "GET",
+        },
         handleSessionExpired,
       );
 
       if (!response.ok) {
         const text = await response.text();
+
         let errorMessage = "Export file gagal.";
-        setMessageType("error");
-        setMessage(errorMessage);
 
         try {
           const result = JSON.parse(text);
@@ -466,7 +501,7 @@ export default function App() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       setMessageType("error");
-      setMessage(error.message);
+      setMessage(error.message || "Export file gagal.");
     } finally {
       setLoading(false);
     }
@@ -474,24 +509,30 @@ export default function App() {
 
   const readFile = async () => {
     try {
+      setLoading(true);
+
       const response = await apiFetch(
         `${API_URL}/file/read`,
-        {},
+        {
+          method: "GET",
+        },
         handleSessionExpired,
       );
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(result.detail || "Read file gagal.");
       }
 
-      setMahasiswa(result.data);
+      setMahasiswa(Array.isArray(result.data) ? result.data : []);
       setMessageType("success");
-      setMessage(result.message);
+      setMessage(result.message || "Data berhasil dibaca dari file.");
     } catch (error) {
       setMessageType("error");
-      setMessage(error.message);
+      setMessage(error.message || "Read file gagal.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -508,7 +549,7 @@ export default function App() {
         handleSessionExpired,
       );
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(result.detail || "Gagal mengubah password.");
@@ -591,7 +632,7 @@ export default function App() {
               setMessage={setMessage}
               filteredMahasiswa={filteredMahasiswa}
               searchInput={searchInput}
-              setSearchInput={setSearchInput}
+              setSearchInput={handleSearchInputChange}
               searchAlgorithm={searchAlgorithm}
               setSearchAlgorithm={setSearchAlgorithm}
               sortBy={sortBy}

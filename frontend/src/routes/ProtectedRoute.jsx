@@ -1,5 +1,4 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { AUTH_TOKEN_KEY } from "../config/auth";
 
 export default function ProtectedRoute({
   children,
@@ -18,9 +17,7 @@ export default function ProtectedRoute({
     );
   }
 
-  const token = localStorage.getItem(AUTH_TOKEN_KEY);
-
-  if (!isAuthenticated || !token) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
