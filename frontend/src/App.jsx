@@ -12,15 +12,6 @@ import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./config/auth";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-function getAuthHeaders() {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY);
-
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
-}
-
 const emptyMahasiswaForm = {
   nim: "",
   nama: "",
@@ -70,12 +61,22 @@ export default function App() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const clearStoredAuth = () => {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_USER_KEY);
+    };
+
     const checkAuth = async () => {
       const savedToken = localStorage.getItem(AUTH_TOKEN_KEY);
-      const savedUser = localStorage.getItem(AUTH_USER_KEY);
 
-      if (!savedToken || !savedUser) {
-        setCheckingAuth(false);
+      if (!savedToken) {
+        clearStoredAuth();
+        if (isMounted) {
+          setAuthUser(null);
+          setCheckingAuth(false);
+        }
         return;
       }
 
@@ -86,23 +87,35 @@ export default function App() {
           },
         });
 
-        if (!response.ok) {
-          throw new Error("Token invalid.");
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !result.user) {
+          throw new Error(result.detail || "Token invalid.");
         }
 
-        const result = await response.json();
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(result.user));
 
-        setAuthUser(result.user || JSON.parse(savedUser));
+        if (isMounted) {
+          setAuthUser(result.user);
+        }
       } catch {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        localStorage.removeItem(AUTH_USER_KEY);
-        setAuthUser(null);
+        clearStoredAuth();
+
+        if (isMounted) {
+          setAuthUser(null);
+        }
       } finally {
-        setCheckingAuth(false);
+        if (isMounted) {
+          setCheckingAuth(false);
+        }
       }
     };
 
     checkAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleLogin = (token, user) => {
@@ -565,7 +578,10 @@ export default function App() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute
+            isAuthenticated={Boolean(authUser)}
+            isCheckingAuth={checkingAuth}
+          >
             <DashboardPage
               view="dashboard"
               authUser={authUser}
@@ -607,7 +623,10 @@ export default function App() {
       <Route
         path="/mahasiswa"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute
+            isAuthenticated={Boolean(authUser)}
+            isCheckingAuth={checkingAuth}
+          >
             <DashboardPage
               view="mahasiswa"
               authUser={authUser}
@@ -649,7 +668,10 @@ export default function App() {
       <Route
         path="/change-password"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute
+            isAuthenticated={Boolean(authUser)}
+            isCheckingAuth={checkingAuth}
+          >
             <ChangePasswordPage
               authUser={authUser}
               onLogout={handleLogout}

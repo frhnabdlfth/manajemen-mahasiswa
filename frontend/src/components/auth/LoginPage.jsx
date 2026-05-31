@@ -142,6 +142,10 @@ export default function LoginPage({ initialMode = "login", onLogin }) {
       throw new Error(result.detail || "Login gagal.");
     }
 
+    if (!result.token || !result.user) {
+      throw new Error("Response login tidak lengkap dari server.");
+    }
+
     onLogin(result.token, result.user);
   };
 
