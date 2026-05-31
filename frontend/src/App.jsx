@@ -442,7 +442,7 @@ export default function App() {
 
       setMessageType("success");
       setMessage(
-        `Data mahasiswa "${keywordValue}" ditemukan menggunakan ${result.algorithm}. Time: ${executionTime} ms. Complexity: ${result.complexity}`,
+        `Data mahasiswa "${keywordValue}" ditemukan menggunakan ${result.algorithm}. Time: ${result.time}. Complexity: ${result.complexity}`,
       );
     } catch (error) {
       setMessageType("error");
