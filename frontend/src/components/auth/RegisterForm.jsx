@@ -56,7 +56,29 @@ export default function RegisterForm({
   const isPasswordStrong = passwordRegisterValidation.every(
     (item) => item.valid,
   );
-  const isRegisterDisabled = loading || !isPasswordStrong;
+
+  const isNameValid = /^[A-Za-z\s.'-]{3,100}$/.test((form.nama || "").trim());
+
+  const isUsernameValid = /^[a-zA-Z0-9_]{4,20}$/.test(
+    (form.username || "").trim(),
+  );
+
+  const isEmailValid = /^[\w.-]+@[\w.-]+\.\w+$/.test(
+    (form.email || "").trim().toLowerCase(),
+  );
+
+  const isPasswordFilled = Boolean((form.password || "").trim());
+  const isConfirmPasswordFilled = Boolean((form.confirm_password || "").trim());
+
+  const isRegisterFormValid =
+    isNameValid &&
+    isUsernameValid &&
+    isEmailValid &&
+    isPasswordFilled &&
+    isConfirmPasswordFilled &&
+    isPasswordStrong;
+
+  const isRegisterDisabled = loading || !isRegisterFormValid;
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
