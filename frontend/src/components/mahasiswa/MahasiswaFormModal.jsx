@@ -40,7 +40,7 @@ export default function MahasiswaFormModal({
     const angkatan = Number(form.angkatan);
     const tipe = String(form.tipe || "").trim();
 
-    const nimPattern = /^[0-9]{11}$/;
+    const nimPattern = /^[0-9]{12}$/;
     const namaPattern = /^[A-Za-z\s.'-]{3,100}$/;
     const emailPattern = /^[\w.-]+@[\w.-]+\.\w+$/;
     const jurusanPattern = /^[A-Za-z\s]{2,100}$/;
@@ -48,7 +48,7 @@ export default function MahasiswaFormModal({
     if (!nim) {
       nextErrors.nim = "NIM wajib diisi.";
     } else if (!nimPattern.test(nim)) {
-      nextErrors.nim = "NIM harus angka dan panjang 11 digit.";
+      nextErrors.nim = "NIM harus angka dan panjang 12 digit.";
     }
 
     if (!nama) {
@@ -137,8 +137,8 @@ export default function MahasiswaFormModal({
             name="nim"
             value={form.nim}
             onChange={handleChange}
-            placeholder="Contoh: 20240021003"
-            maxLength={11}
+            placeholder="Contoh: 242400210032"
+            maxLength={12}
           />
           <ErrorText message={errors.nim} />
         </div>
