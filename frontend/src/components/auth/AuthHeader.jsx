@@ -5,10 +5,10 @@ export default function AuthHeader({ mode }) {
   const isVerify = mode === "verify";
 
   const title = isRegister
-    ? "Register"
+    ? "Register Akun Baru"
     : isVerify
       ? "Verifikasi Email"
-      : "Login";
+      : "Manajemen Mahasiswa";
 
   const subtitle = isRegister
     ? "Buat akun baru dan cek email untuk kode verifikasi"
@@ -36,18 +36,18 @@ export default function AuthHeader({ mode }) {
         </p>
       </div>
 
-      <div className="mb-6 rounded-[24px] border-[4px] border-black bg-[#C4B5FD] p-5 shadow-[6px_6px_0_#000]">
+      <div className="mb-2 rounded-[24px] border-[4px] border-black bg-[#C4B5FD] p-5 shadow-[6px_6px_0_#000]">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full border-[3px] border-black bg-white px-3 py-1 text-xs font-black shadow-[3px_3px_0_#000]">
           <Sparkles size={14} />
           {isRegister
             ? "REGISTER ACCESS"
             : isVerify
               ? "VERIFY ACCESS"
-              : "USER ACCESS"}
+              : "LOGIN ACCESS"}
         </div>
 
         <h2 className="text-3xl font-black tracking-tight">{title}</h2>
-        <p className="mt-2 text-sm font-bold">{subtitle}</p>
+        <p className="text-sm font-bold">{subtitle}</p>
       </div>
     </>
   );
