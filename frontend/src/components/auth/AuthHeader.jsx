@@ -5,10 +5,10 @@ export default function AuthHeader({ mode }) {
   const isVerify = mode === "verify";
 
   const title = isRegister
-    ? "Register Admin"
+    ? "Register"
     : isVerify
       ? "Verifikasi Email"
-      : "Login Admin";
+      : "Login";
 
   const subtitle = isRegister
     ? "Buat akun baru dan cek email untuk kode verifikasi"
@@ -29,10 +29,10 @@ export default function AuthHeader({ mode }) {
 
         <p className="mt-2 text-sm font-bold">
           {isRegister
-            ? "Daftar akun admin baru"
+            ? "Daftar akun baru"
             : isVerify
               ? "Verifikasi email akun"
-              : "Login admin untuk masuk ke dashboard"}
+              : "Login untuk masuk ke dashboard"}
         </p>
       </div>
 
@@ -43,7 +43,7 @@ export default function AuthHeader({ mode }) {
             ? "REGISTER ACCESS"
             : isVerify
               ? "VERIFY ACCESS"
-              : "ADMIN ACCESS"}
+              : "USER ACCESS"}
         </div>
 
         <h2 className="text-3xl font-black tracking-tight">{title}</h2>

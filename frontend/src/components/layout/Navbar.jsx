@@ -89,9 +89,6 @@ export default function Navbar({ authUser, onLogout, showNavigation = true }) {
                 <b className="block max-w-44 truncate text-sm font-black">
                   {authUser?.nama || "-"}
                 </b>
-                <span className="block text-xs font-semibold">
-                  {authUser?.role || "-"}
-                </span>
               </div>
             </button>
 
