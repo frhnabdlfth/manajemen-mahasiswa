@@ -59,10 +59,6 @@ export default function RegisterForm({
 
   const isNameValid = /^[A-Za-z\s.'-]{3,100}$/.test((form.nama || "").trim());
 
-  const isUsernameValid = /^[a-zA-Z0-9_]{4,20}$/.test(
-    (form.username || "").trim(),
-  );
-
   const isEmailValid = /^[\w.-]+@[\w.-]+\.\w+$/.test(
     (form.email || "").trim().toLowerCase(),
   );
@@ -72,7 +68,6 @@ export default function RegisterForm({
 
   const isRegisterFormValid =
     isNameValid &&
-    isUsernameValid &&
     isEmailValid &&
     isPasswordFilled &&
     isConfirmPasswordFilled &&
@@ -91,15 +86,6 @@ export default function RegisterForm({
             value={form.nama}
             onChange={onChange}
             placeholder="Masukkan nama lengkap"
-          />
-
-          <AuthInput
-            label="Username"
-            icon={<UserRound size={20} />}
-            name="username"
-            value={form.username}
-            onChange={onChange}
-            placeholder="contoh: admin_baru"
           />
 
           <AuthInput

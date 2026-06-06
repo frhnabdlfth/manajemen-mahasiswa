@@ -10,7 +10,6 @@ import VerifyEmailForm from "./VerifyEmailForm.jsx";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const emptyForm = {
-  username: "",
   nama: "",
   email: "",
   password: "",
@@ -18,7 +17,6 @@ const emptyForm = {
   code: "",
 };
 
-const usernameRegex = /^[a-zA-Z0-9_]{4,30}$/;
 const emailRegex = /^[\w.-]+@[\w.-]+\.\w+$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
@@ -91,10 +89,6 @@ export default function LoginPage({ initialMode = "login", onLogin }) {
   const validateRegister = () => {
     if (!form.nama.trim()) return "Nama wajib diisi.";
 
-    if (!usernameRegex.test(form.username.trim())) {
-      return "Username harus 4-30 karakter dan hanya boleh huruf, angka, atau underscore.";
-    }
-
     if (!emailRegex.test(form.email.trim())) {
       return "Format email tidak valid.";
     }
@@ -158,7 +152,6 @@ export default function LoginPage({ initialMode = "login", onLogin }) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        username: form.username.trim(),
         nama: form.nama.trim(),
         email: registeredEmail,
         password: form.password,
@@ -181,7 +174,6 @@ export default function LoginPage({ initialMode = "login", onLogin }) {
 
     setForm({
       ...emptyForm,
-      username: result.username || form.username.trim(),
       email: result.email || registeredEmail,
     });
 
