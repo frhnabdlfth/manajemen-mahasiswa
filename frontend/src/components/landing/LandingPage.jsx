@@ -50,13 +50,13 @@ const features = [
   {
     icon: <LockKeyhole size={24} />,
     title: "Pydantic Validation",
-    desc: "Login admin memakai token, jadi akses dashboard lebih aman dan terkontrol.",
+    desc: "Login memakai token, jadi akses dashboard lebih aman dan terkontrol.",
     color: "bg-[#F9A8D4]",
   },
   {
     icon: <MailCheck size={24} />,
     title: "Verifikasi Email",
-    desc: "Akun admin wajib verifikasi kode email terlebih dahulu sebelum bisa masuk aplikasi.",
+    desc: "Akun wajib verifikasi kode email terlebih dahulu sebelum bisa masuk aplikasi.",
     color: "bg-[#FFDE59]",
   },
 ];
@@ -344,7 +344,7 @@ function FeatureSection() {
         </h2>
         <p className="mt-4 text-sm font-bold leading-6 text-slate-700">
           Dibuat dengan flow yang simpel: data mahasiswa bisa dikelola, dicari,
-          diurutkan, diekspor, dan diamankan dengan login admin.
+          diurutkan, diekspor, dan diamankan dengan login.
         </p>
       </div>
 
@@ -467,8 +467,8 @@ function WorkflowSection() {
         <WorkflowCard
           number="01"
           icon={<UserPlus size={24} />}
-          title="Daftar Admin"
-          desc="Admin membuat akun dengan username, email, nama, dan password."
+          title="Daftar"
+          desc="Membuat akun dengan username, email, nama, dan password."
         />
 
         <WorkflowCard
@@ -524,7 +524,7 @@ function CTASection({ onGoRegister }) {
           Siap kelola data mahasiswa dengan lebih rapi?
         </h2>
         <p className="mt-4 text-sm font-bold leading-6 text-slate-700">
-          Mulai dari buat akun admin, verifikasi email, lalu masuk ke dashboard
+          Mulai dari buat akun baru, verifikasi email, lalu masuk ke dashboard
           untuk mengelola data mahasiswa.
         </p>
 
